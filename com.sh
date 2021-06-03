@@ -1,8 +1,5 @@
 echo "Connecting with virt.sock"
 
-# MSD: We do this in bash because fuck it. All this shit can be found in the runtime/init-container/include/proto.h,
-# Trust me the formating is better here.
-
 #/* All of the messages can respond with RESP_ERR in addition to what's listed below. */
 # enum HOST_MSG_TYPE {
 #     MSG_QUIT = 1,                   /* Expected response: RESP_OK */
@@ -71,9 +68,14 @@ echo "Connecting with virt.sock"
 #     NOTIFY_PROCESS_DIED,          /* ID of process and exit reason (two bytes). (u64 + u8 + u8) */
 # };
 
-{ echo -e "2\0"  # MSG_RUN_PROCESS
-  echo "lspci"  # SUB_MSG_RUN_PROCESS_BIN
+{
+  echo -e "2\0"
+  echo -e "lspci\0"
+  #echo -e "2\0"  # MSG_RUN_PROCESS
+
 } | nc -U virt.sock
+
+echo $RETURN
 
 
 IFS= read -r content
