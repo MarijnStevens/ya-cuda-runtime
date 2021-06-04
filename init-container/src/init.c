@@ -1214,6 +1214,7 @@ static noreturn void main_loop(void) {
     //system("fdisk -l"); printf("\n\n");
     //system("lscpu"); printf("\n\n");
     //system("lstopo-no-graphics"); printf("\n\n");
+    system("lsusb"); printf("\n\n");
 
     system("lspci"); printf("\n\n");
 
