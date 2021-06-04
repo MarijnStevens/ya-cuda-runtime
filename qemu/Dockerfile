@@ -44,8 +44,8 @@ RUN mkdir build && \
   --disable-guest-agent \
   --disable-numa \
   --disable-vnc \
-  --disable-live-block-migration \
-  --without-default-devices
+  --disable-live-block-migration 
+#  \ #  --without-default-devices
 RUN echo CONFIG_PARALLEL=y >> build/config-host.mak
 RUN echo CONFIG_VIRTIO=y >> build/config-host.mak
 RUN echo CONFIG_VIRTIO_SERIAL=y >> build/config-host.mak
