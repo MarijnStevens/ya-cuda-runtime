@@ -17,4 +17,7 @@ DISK=docker-ya-cuda-test-img-latest-1f94cdc2a7.gvmi
         -chardev socket,path=virt.sock,server,nowait,id=manager_cdev \
         -device virtserialport,chardev=manager_cdev,name=manager_port \
         -drive file=$DISK,cache=unsafe,readonly=on,format=raw,if=virtio \
+        -drive file=pks.img,format=raw,id=disk2 \
         -no-reboot
+
+        #-usb -device usb-host:productid=0xabcd,vendorid=0x1234 \

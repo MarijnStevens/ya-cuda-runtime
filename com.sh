@@ -69,14 +69,11 @@ echo "Connecting with virt.sock"
 # };
 
 {
-  echo -e "2\0"
-  echo -e "lspci\0"
-  #echo -e "2\0"  # MSG_RUN_PROCESS
-
+  echo -e "2\0"  # MSG_RUN_PROCESS
+  echo -e "crash\0"
 } | nc -U virt.sock
 
 echo $RETURN
-
 
 IFS= read -r content
 echo "${content}"
