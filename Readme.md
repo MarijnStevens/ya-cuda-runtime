@@ -1,5 +1,8 @@
 # Ya-cuda-runtime-test
 
+NOTE: For dev's only. Don't expect things to run out of the box.
+test.sh needs to be tweaked because of a hack for starting a new terminal window.
+
 Run ./test.sh to display what lspci are visible in the vm.
 
 # Notes
