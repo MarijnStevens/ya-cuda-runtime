@@ -98,12 +98,16 @@ static noreturn void die(void) {
 })
 
 static void load_module(const char* path) {
+    printf("DEBUG: Load module: %s\n", path);
+
     int fd = CHECK(open(path, O_RDONLY | O_CLOEXEC));
     CHECK(syscall(SYS_finit_module, fd, "", 0));
     CHECK(close(fd));
 }
 
 int make_nonblocking(int fd) {
+    printf("DEBUG: make_nonblocking(fd=%i)\n", fd);
+
     errno = 0;
     int flags = fcntl(fd, F_GETFL);
     if (flags == -1 && errno) {
@@ -130,6 +134,8 @@ int make_cloexec(int fd) {
 */
 
 static void cleanup_fd_desc(struct redir_fd_desc* fd_desc) {
+    printf("DEBUG: cleanup_fd_desc()\n");
+
     switch (fd_desc->type) {
         case REDIRECT_FD_FILE:
             free(fd_desc->path);
@@ -152,6 +158,8 @@ static void cleanup_fd_desc(struct redir_fd_desc* fd_desc) {
 
 __attribute__((unused)) static void delete_proc(struct process_desc* proc_desc) {
     remove_process(proc_desc);
+    printf("DEBUG: delete_proc()\n");
+
     for (size_t fd = 0; fd < 3; ++fd) {
         cleanup_fd_desc(&proc_desc->redirs[fd]);
     }
@@ -164,6 +172,8 @@ struct exit_reason {
 };
 
 static void send_process_died(uint64_t id, struct exit_reason reason) {
+    printf("DEBUG: send_process_died()\n");
+
     struct msg_hdr resp = {
         .msg_id = 0,
         .type = NOTIFY_PROCESS_DIED,
@@ -177,6 +187,7 @@ static void send_process_died(uint64_t id, struct exit_reason reason) {
 
 static struct exit_reason encode_status(int status, int type) {
     struct exit_reason exit_reason;
+    printf("DEBUG: send_process_died(status=%i, type=%i)\n", status, type);
 
     switch (type) {
         case CLD_EXITED:
@@ -199,6 +210,8 @@ static struct exit_reason encode_status(int status, int type) {
 }
 
 static void handle_sigchld(void) {
+    printf("DEBUG: handle_sigchld()\n");
+
     struct signalfd_siginfo siginfo = { 0 };
 
     if (read(g_sig_fd, &siginfo, sizeof(siginfo)) != sizeof(siginfo)) {
@@ -246,6 +259,8 @@ static void handle_sigchld(void) {
 }
 
 static void block_signals(void) {
+    printf("DEBUG: block_signals()\n");
+
     sigset_t set;
     CHECK(sigemptyset(&set));
     CHECK(sigaddset(&set, SIGCHLD));
@@ -254,6 +269,8 @@ static void block_signals(void) {
 }
 
 static void setup_sigfd(void) {
+    printf("DEBUG: setup_sigfd()\n");
+
     sigset_t set;
     CHECK(sigemptyset(&set));
     CHECK(sigaddset(&set, SIGCHLD));
@@ -261,6 +278,9 @@ static void setup_sigfd(void) {
 }
 
 static int create_dir_path(char* path) {
+    printf("DEBUG: create_dir_path()\n");
+    printf("DEBUG: path = %s \n", path);
+
     assert(path[0] == '/');
 
     char* next = path;
@@ -284,7 +304,12 @@ static int create_dir_path(char* path) {
 }
 
 static void setup_agent_directories(void) {
+    printf("DEBUG: setup_agent_directories()\n");
+
     char* path = strdup(OUTPUT_PATH_PREFIX);
+
+    printf("DEBUG: path = %s \n\n", path);
+
     if (!path) {
         fprintf(stderr, "setup_agent_directories OOM\n");
         die();
@@ -296,6 +321,8 @@ static void setup_agent_directories(void) {
 }
 
 static void send_response_hdr(msg_id_t msg_id, enum GUEST_MSG_TYPE type) {
+    printf("DEBUG: send_response_hdr()\n");
+
     struct msg_hdr resp = {
         .msg_id = msg_id,
         .type = type,
@@ -304,30 +331,42 @@ static void send_response_hdr(msg_id_t msg_id, enum GUEST_MSG_TYPE type) {
 }
 
 static void send_response_ok(msg_id_t msg_id) {
+    printf("DEBUG: send_response_ok()\n");
+
     send_response_hdr(msg_id, RESP_OK);
 }
 
 static void send_response_err(msg_id_t msg_id, uint32_t ret_val) {
+    printf("DEBUG: send_response_err( msg_id = %li, ret_val = %i )\n", msg_id, ret_val);
+
     send_response_hdr(msg_id, RESP_ERR);
     CHECK(writen(g_cmds_fd, &ret_val, sizeof(ret_val)));
 }
 
 static void send_response_u64(msg_id_t msg_id, uint64_t ret_val) {
+    printf("DEBUG: send_response_u64()\n");
+
     send_response_hdr(msg_id, RESP_OK_U64);
     CHECK(writen(g_cmds_fd, &ret_val, sizeof(ret_val)));
 }
 
 static void send_response_bytes(msg_id_t msg_id, const char* buf, size_t len) {
+    printf("DEBUG: send_response_bytes()\n");
+
     send_response_hdr(msg_id, RESP_OK_BYTES);
     CHECK(send_bytes(g_cmds_fd, buf, len));
 }
 
 static void send_response_cyclic_buffer(msg_id_t msg_id, struct cyclic_buffer* cb, size_t len) {
+    printf("DEBUG: send_response_cyclic_buffer()\n");
+
     send_response_hdr(msg_id, RESP_OK_BYTES);
     CHECK(send_bytes_cyclic_buffer(g_cmds_fd, cb, len));
 }
 
 static noreturn void handle_quit(msg_id_t msg_id) {
+    printf("DEBUG: handle_quit()\n");
+
     send_response_ok(msg_id);
     die();
 }
@@ -336,6 +375,9 @@ static int add_epoll_fd_desc(struct redir_fd_desc* redir_fd_desc,
                              int fd,
                              int src_fd,
                              struct epoll_fd_desc** epoll_fd_desc_ptr) {
+
+    printf("DEBUG: add_epoll_fd_desc(...)\n");
+
     struct epoll_fd_desc* epoll_fd_desc = malloc(sizeof(*epoll_fd_desc));
     if (!epoll_fd_desc) {
         return -1;
@@ -366,6 +408,8 @@ static int add_epoll_fd_desc(struct redir_fd_desc* redir_fd_desc,
 }
 
 static int del_epoll_fd_desc(struct epoll_fd_desc* epoll_fd_desc) {
+    printf("DEBUG: del_epoll_fd_desc(...)\n");
+
     if (epoll_ctl(g_epoll_fd, EPOLL_CTL_DEL, epoll_fd_desc->fd, NULL) < 0) {
         return -1;
     }
@@ -376,6 +420,8 @@ static int del_epoll_fd_desc(struct epoll_fd_desc* epoll_fd_desc) {
 /* Assumes fd is either 0, 1 or 2.
  * Returns whether call was successful (setting errno on failures). */
 static bool redirect_fd_to_path(int fd, const char* path) {
+    printf("DEBUG: redirect_fd_to_path(fd = %i, path = %s)\n", fd, path);
+
     assert(fd == 0 || fd == 1 || fd == 2);
 
     int source_fd = -1;
@@ -410,6 +456,9 @@ static bool redirect_fd_to_path(int fd, const char* path) {
 static noreturn void child_wrapper(int parent_pipe[2],
                                    struct new_process_args* new_proc_args,
                                    struct redir_fd_desc fd_descs[3]) {
+
+    printf("DEBUG: child_wrapper(...)\n");
+
     if (close(parent_pipe[0]) < 0) {
         goto out;
     }
@@ -481,6 +530,9 @@ static uint64_t get_next_id(void) {
 }
 
 static int create_process_fds_dir(uint64_t id) {
+    printf("DEBUG: create_process_fds_dir(id = %li)\n", id);
+
+
     char* path = NULL;
     if (asprintf(&path, OUTPUT_PATH_PREFIX "/%llu", id) < 0) {
         return -1;
@@ -498,6 +550,8 @@ static int create_process_fds_dir(uint64_t id) {
 }
 
 static char* construct_output_path(uint64_t id, unsigned int fd) {
+    printf("DEBUG: construct_output_path( id = %li, fd = %i )\n", id, fd);
+
     char* path = NULL;
     if (asprintf(&path, OUTPUT_PATH_PREFIX "/%llu/%u", id, fd) < 0) {
         return NULL;
@@ -508,6 +562,9 @@ static char* construct_output_path(uint64_t id, unsigned int fd) {
 static uint32_t spawn_new_process(struct new_process_args* new_proc_args,
                                   struct redir_fd_desc fd_descs[3],
                                   uint64_t* id) {
+
+    printf("DEBUG: spawn_new_process(...)");
+
     uint32_t ret = 0;
     pid_t p = 0;
     struct epoll_fd_desc* epoll_fd_descs[3] = { NULL };
@@ -680,6 +737,8 @@ static bool is_fd_buf_size_valid(size_t size) {
 }
 
 static uint32_t parse_fd_redir(struct redir_fd_desc fd_descs[3]) {
+    printf("DEBUG: parse_fd_redir(...)");
+
     uint32_t fd = 0;
     CHECK(recv_u32(g_cmds_fd, &fd));
 
@@ -726,6 +785,8 @@ static uint32_t parse_fd_redir(struct redir_fd_desc fd_descs[3]) {
 }
 
 static void handle_run_process(msg_id_t msg_id) {
+    printf("DEBUG: handle_run_process(%lu)\n", msg_id);
+
     bool done = false;
     uint32_t ret = 0;
     struct new_process_args new_proc_args = {
@@ -745,8 +806,6 @@ static void handle_run_process(msg_id_t msg_id) {
     uint64_t proc_id = 0;
 
     while (!done) {
-        puts("while (!done) { = handle_run_process" );
-
         uint8_t subtype = 0;
 
         CHECK(recv_u8(g_cmds_fd, &subtype));
@@ -841,6 +900,8 @@ static uint32_t do_kill_process(uint64_t id) {
 }
 
 static void handle_kill_process(msg_id_t msg_id) {
+    printf("DEBUG: handle_kill_process(msd_id = %li )\n ", msg_id);
+
     bool done = false;
     uint32_t ret = 0;
     uint64_t id = 0;
@@ -936,6 +997,13 @@ out:
 
 static uint32_t do_query_output_path(char* path, uint64_t off, char** buf_ptr,
                                      uint64_t* len_ptr) {
+    printf("DEBUG: do_query_output_path( \n ");
+    printf("  path = %s,\n", path);
+    printf("  off = %lu,\n", off);
+    printf("  buf_ptr = %p,\n", buf_ptr);
+    printf("  len_ptr = %p \n", len_ptr);
+    printf(")\n");
+
     uint32_t ret = 0;
     char* buf = MAP_FAILED;
     size_t len = 0;
@@ -997,6 +1065,8 @@ out:
 }
 
 static void handle_query_output(msg_id_t msg_id) {
+    printf("DEBUG: handle_query_output(msg_id = %lu)\n", msg_id);
+
     bool done = false;
     uint32_t ret = 0;
     uint64_t id = 0;
@@ -1082,6 +1152,8 @@ out_err:
 
 }
 static void send_output_available_notification(uint64_t id, uint32_t fd) {
+    printf("DEBUG: end_output_available_notification()\n");
+
     struct msg_hdr resp = {
         .msg_id = 0,
         .type = NOTIFY_OUTPUT_AVAILABLE,
@@ -1093,6 +1165,8 @@ static void send_output_available_notification(uint64_t id, uint32_t fd) {
 }
 
 static void handle_output_available(struct epoll_fd_desc** epoll_fd_desc_ptr) {
+    printf("DEBUG: handle_output_available()\n");
+
     struct epoll_fd_desc* epoll_fd_desc = *epoll_fd_desc_ptr;
     struct cyclic_buffer* cb = &epoll_fd_desc->data->buffer.cb;
     size_t to_read = cyclic_buffer_free_size(cb);
@@ -1137,27 +1211,36 @@ static void handle_output_available(struct epoll_fd_desc** epoll_fd_desc_ptr) {
 }
 
 static void handle_message(void) {
+    printf("DEBUG: handle_message()\n");
+
     struct msg_hdr msg_hdr;
 
     CHECK(readn(g_cmds_fd, &msg_hdr, sizeof(msg_hdr)));
 
+    printf("DEBUG: msg_hdr.type = %i \n", msg_hdr.type);
+
     switch (msg_hdr.type) {
         case MSG_QUIT:
+            printf("DEBUG: MSG_QUIT\n");
             fprintf(stderr, "Exiting\n");
             handle_quit(msg_hdr.msg_id);
         case MSG_RUN_PROCESS:
+            printf("DEBUG: MSG_RUN_PROCESS\n");
             fprintf(stderr, "MSG_RUN_PROCESS\n");
             handle_run_process(msg_hdr.msg_id);
             break;
         case MSG_KILL_PROCESS:
+            printf("DEBUG: MSG_KILL_PROCESS\n");
             fprintf(stderr, "MSG_KILL_PROCESS\n");
             handle_kill_process(msg_hdr.msg_id);
             break;
         case MSG_MOUNT_VOLUME:
+            printf("DEBUG: MSG_MOUNT_VOLUME\n");
             fprintf(stderr, "MSG_MOUNT_VOLUME\n");
             handle_mount(msg_hdr.msg_id);
             break;
         case MSG_QUERY_OUTPUT:
+            printf("DEBUG: MSG_QUERY_OUTPUT\n");
             fprintf(stderr, "MSG_QUERY_OUTPUT\n");
             handle_query_output(msg_hdr.msg_id);
             break;
@@ -1215,6 +1298,7 @@ static noreturn void main_loop(void) {
     //system("lscpu"); printf("\n\n");
     //system("lstopo-no-graphics"); printf("\n\n");
     //system("lsusb"); printf("\n\n");
+    system("ls -la /var/tmp/guest_agent_private/fds"); printf("\n\n");
 
     system("lspci"); printf("\n\n");
 
@@ -1278,6 +1362,8 @@ static noreturn void main_loop(void) {
 }
 
 static void create_dir(const char *pathname, mode_t mode) {
+    printf("DEBUG: create_dir(%s)\n", pathname);
+
     if (mkdir(pathname, mode) < 0 && errno != EEXIST) {
         fprintf(stderr, "mkdir(%s) failed with: %m\n", pathname);
         die();
@@ -1285,6 +1371,8 @@ static void create_dir(const char *pathname, mode_t mode) {
 }
 
 int main(void) {
+    printf("DEBUG: main()\n");
+
     setbuf(stdin, NULL);
     setbuf(stdout, NULL);
     setbuf(stderr, NULL);

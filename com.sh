@@ -68,12 +68,12 @@ echo "Connecting with virt.sock"
 #     NOTIFY_PROCESS_DIED,          /* ID of process and exit reason (two bytes). (u64 + u8 + u8) */
 # };
 
+
+echo "Start of com.sh"
+
 {
   echo -e "2\0"  # MSG_RUN_PROCESS
   echo -e "crash\0"
 } | nc -U virt.sock
 
-echo $RETURN
-
-IFS= read -r content
-echo "${content}"
+echo "End of com.sh"
