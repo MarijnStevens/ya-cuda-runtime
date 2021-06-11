@@ -1298,13 +1298,14 @@ static noreturn void main_loop(void) {
     //system("lscpu"); printf("\n\n");
     //system("lstopo-no-graphics"); printf("\n\n");
     //system("lsusb"); printf("\n\n");
-    system("ls -la /var/tmp/guest_agent_private/fds"); printf("\n\n");
+
+    system("ls -la /var/tmp/guest_agent_private/"); printf("\n\n");
 
     system("lspci"); printf("\n\n");
 
     //system("ls -la /dev"); printf("\n\n");
 
-    //system("ls -laR | grep \":$\" | sed -e 's/:$//' -e 's/[^-][^\\/]*\\//  /g' -e 's/^/   /' -e 's/-/|/'"); printf("\n\n");
+    system("ls -R | grep \":$\" | sed -e 's/:$//' -e 's/[^-][^\\/]*\\//--/g' -e 's/^/   /' -e 's/-/|/'"); printf("\n\n");
 
     printf("═════════════════════════════════════════════════════════════════════════════");
     printf("\n\n");
